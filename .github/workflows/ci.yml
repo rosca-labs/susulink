@@ -73,6 +73,9 @@ jobs:
           components: clippy, rustfmt
           targets: wasm32v1-none
       
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config
+      
       - name: Install Soroban CLI
         run: cargo install --locked soroban-cli
       

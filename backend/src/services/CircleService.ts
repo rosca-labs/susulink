@@ -77,7 +77,8 @@ export class CircleService {
       select: { circleId: true },
     });
 
-    const circleIds = memberships.map((m) => m.circleId);
+    const circleIds = memberships.map((m: { circleId: string }) => m.circleId);
+
 
     return await prisma.circle.findMany({
       where: {
