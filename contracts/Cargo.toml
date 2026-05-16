@@ -6,8 +6,8 @@ members = [
     "contribution_vault",
     "penalty_pool",
     "circle_factory",
-    "ajo_circle",
 ]
+
 
 
 [profile.release]

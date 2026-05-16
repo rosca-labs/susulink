@@ -1,9 +1,21 @@
 #![no_std]
 #![allow(clippy::too_many_arguments)]
 
-use soroban_sdk::{
-    contract, contractimpl, contracttype, symbol_short, Address, Env, String, Symbol, Vec,
-};
+use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, String, Vec};
+
+#[contracttype]
+#[derive(Clone)]
+pub enum DataKey {
+    Config,
+    Admin,
+    UsdcToken,
+    VaultContract,
+    PenaltyContract,
+    Status,
+    Members,
+    InviteCode,
+    PayoutQueue,
+}
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -39,12 +51,6 @@ pub struct CircleConfig {
 #[contract]
 pub struct SusuCircleContract;
 
-const CONFIG: Symbol = symbol_short!("CONFIG");
-const STATUS: Symbol = symbol_short!("STATUS");
-const MEMBERS: Symbol = symbol_short!("MEMBERS");
-const ADMIN: Symbol = symbol_short!("ADMIN");
-const TOKEN: Symbol = symbol_short!("TOKEN");
-
 #[contractimpl]
 impl SusuCircleContract {
     pub fn initialize(
@@ -62,7 +68,7 @@ impl SusuCircleContract {
         auto_renew: bool,
         _invite_code: String,
     ) {
-        if env.storage().instance().has(&CONFIG) {
+        if env.storage().instance().has(&DataKey::Config) {
             panic!("Already initialized");
         }
 
@@ -82,27 +88,27 @@ impl SusuCircleContract {
             auto_renew,
         };
 
-        env.storage().instance().set(&CONFIG, &config);
+        env.storage().instance().set(&DataKey::Config, &config);
         env.storage()
             .instance()
-            .set(&STATUS, &CircleStatus::Forming);
-        env.storage().instance().set(&ADMIN, &admin);
-        env.storage().instance().set(&TOKEN, &usdc_token);
+            .set(&DataKey::Status, &CircleStatus::Forming);
+        env.storage().instance().set(&DataKey::Admin, &admin);
+        env.storage().instance().set(&DataKey::UsdcToken, &usdc_token);
 
         let members: Vec<Address> = Vec::new(&env);
-        env.storage().instance().set(&MEMBERS, &members);
+        env.storage().instance().set(&DataKey::Members, &members);
     }
 
     pub fn join_circle(env: Env, member: Address) {
         member.require_auth();
 
-        let mut status: CircleStatus = env.storage().instance().get(&STATUS).unwrap();
+        let mut status: CircleStatus = env.storage().instance().get(&DataKey::Status).unwrap();
         if status != CircleStatus::Forming {
             panic!("Circle is not in Forming state");
         }
 
-        let config: CircleConfig = env.storage().instance().get(&CONFIG).unwrap();
-        let mut members: Vec<Address> = env.storage().instance().get(&MEMBERS).unwrap();
+        let config: CircleConfig = env.storage().instance().get(&DataKey::Config).unwrap();
+        let mut members: Vec<Address> = env.storage().instance().get(&DataKey::Members).unwrap();
 
         if members.len() >= config.member_count {
             panic!("Circle is full");
@@ -113,23 +119,23 @@ impl SusuCircleContract {
         }
 
         members.push_back(member);
-        env.storage().instance().set(&MEMBERS, &members);
+        env.storage().instance().set(&DataKey::Members, &members);
 
         if members.len() == config.member_count {
             status = CircleStatus::Active;
-            env.storage().instance().set(&STATUS, &status);
+            env.storage().instance().set(&DataKey::Status, &status);
         }
     }
 
     pub fn get_config(env: Env) -> CircleConfig {
-        env.storage().instance().get(&CONFIG).unwrap()
+        env.storage().instance().get(&DataKey::Config).unwrap()
     }
 
     pub fn get_status(env: Env) -> CircleStatus {
-        env.storage().instance().get(&STATUS).unwrap()
+        env.storage().instance().get(&DataKey::Status).unwrap()
     }
 
     pub fn get_members(env: Env) -> Vec<Address> {
-        env.storage().instance().get(&MEMBERS).unwrap()
+        env.storage().instance().get(&DataKey::Members).unwrap()
     }
 }
