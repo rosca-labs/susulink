@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+
+members = [
+    "susu_circle",
+    "contribution_vault",
+    "penalty_pool",
+    "circle_factory",
+    "ajo_circle",
+]
+
+
+[profile.release]
+opt-level = "z"
+overflow-checks = true
+debug = false
+panic = "abort"
+lto = true
+codegen-units = 1
