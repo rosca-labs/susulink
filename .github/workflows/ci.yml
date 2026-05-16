@@ -1,0 +1,99 @@
+name: SusuLink CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: backend
+      
+      - name: Lint
+        run: pnpm run lint
+        working-directory: backend
+      
+      - name: Build
+        run: pnpm run build
+        working-directory: backend
+      
+      - name: Test
+        run: pnpm test
+        working-directory: backend
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend
+      
+      - name: Build
+        run: pnpm run build
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: https://api.susulink.io/api/v1
+          NEXT_PUBLIC_STELLAR_NETWORK: TESTNET
+      
+      - name: Test
+        run: pnpm run test -- --run
+        working-directory: frontend
+
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: clippy, rustfmt
+          targets: wasm32v1-none
+      
+      - name: Install Soroban CLI
+        run: cargo install --locked soroban-cli
+      
+      - name: Format Check
+        run: cargo fmt --all --check
+        working-directory: contracts
+      
+      - name: Clippy
+        run: cargo clippy --all -- -D warnings
+        working-directory: contracts
+      
+      - name: Build
+        run: cargo build --target wasm32v1-none --release
+        working-directory: contracts
+      
+      - name: Test
+        run: cargo test
+        working-directory: contracts
+
+      - name: Coverage (Tarpaulin)
+        run: |
+          cargo install cargo-tarpaulin
+          cargo tarpaulin --all --out xml
+        working-directory: contracts
