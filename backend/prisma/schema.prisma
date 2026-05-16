@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String   @id @default(uuid())
+  stellarAddress String   @unique
+  displayName    String?
+  email          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Circle {
+  id                  String   @id @default(uuid())
+  contractId          String   @unique // Soroban address
+  vaultContractId     String?
+  penaltyContractId   String?
+  name                String
+  memberCount         Int
+  contributionAmount  Decimal  @db.Decimal(20, 7)
+  frequencyDays       Int
+  payoutOrder         String   // RandomDraw | FixedQueue | BidAuction
+  penaltyRateBps      Int
+  autoRenew           Boolean  @default(false)
+  status              String   @default("Forming") // Forming | Active | Completed | Dissolved
+  currentCycle        Int      @default(0)
+  inviteCode          String   @unique
+  creatorAddress      String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Member {
+  id              String   @id @default(uuid())
+  circleId        String
+  userId          String
+  payoutPosition  Int?
+  timesLate       Int      @default(0)
+  hasReceivedPayout Boolean @default(false)
+  
+  @@unique([circleId, userId])
+}
+
+model Contribution {
+  id             String   @id @default(uuid())
+  circleId       String
+  memberAddress  String
+  cycleNumber    Int
+  amount         Decimal  @db.Decimal(20, 7)
+  txHash         String   @unique
+  isLate         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+}
+
+model Payout {
+  id               String   @id @default(uuid())
+  circleId         String
+  recipientAddress String
+  cycleNumber      Int
+  amount           Decimal  @db.Decimal(20, 7)
+  txHash           String   @unique
+  createdAt        DateTime @default(now())
+}
